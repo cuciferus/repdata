@@ -2,15 +2,37 @@
 
 
 ## Loading and preprocessing the data
+unzip("activity.zip")
+df<-read.csv2("activity.csv", header=T, sep=",", na.strings="NA")
+df$date<-as.Date(df$date, format="%Y-%m-%d")
+startDate<- strptime(df$date[1], format="%Y-%m-%d", tz="UTC") #just hate date transformation
+endDate<-paste(tail(df,1)$date, tail(df,1)$interval)
+endDate<-strptime(endDate, format="%Y-%m-%d %H%M", tz="UTC")
+#gen sequence
+datetime <-seq(startDate, endDate, length=nrow(df))
+library(reshape2)
+melted<-melt(df, id=c('date','interval'))
+morphed<-dcast(melted, date~variable, sum, na.rm=T)
 
 
+#Complete activity preprocessing
 
 ## What is mean total number of steps taken per day?
-
-
+#agregate<- aggregate(x=df$steps, by=list(df$date), FUN = sum)
+#hist(agregate[,2], col=green)
+#mean(agregate[,2])
+#median(agregate[,2])
+meanStepsDay<-mean(morphed$steps)
+medianStepsDay<-median(morphed$steps)
+hist(morphed$steps, col="green",main="The Total Number of daily steps", xlab="total number of steps/day")
+abline(v=meanStepsDay, col="red", lwd=3)
+abline(v=medianStepsDay, col="blue", lwd=2)
+legend("topright", legend=c("mean","median"), col=c("red", "blue"),
+        lty="solid", lwd=3, bty="n")
 
 ## What is the average daily activity pattern?
-
+averageDay<-aggregate(df$steps, list(df$interval), FUN=mean, na.rm=T)
+names(averageDay)<-c('interval','steps')
 
 
 ## Imputing missing values
