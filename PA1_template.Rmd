@@ -33,10 +33,50 @@ legend("topright", legend=c("mean","median"), col=c("red", "blue"),
 ## What is the average daily activity pattern?
 averageDay<-aggregate(df$steps, list(df$interval), FUN=mean, na.rm=T)
 names(averageDay)<-c('interval','steps')
+#Now we will plot the results, these results are the average value of steps during each 5 minute interval during the day.
 
+#agregate time column
+averageDay$Time <- as.POSIXct(datetime[1:nrow(averageDay)], format="%H:%M", tz="UTC")
+#max steps on average day
+maxStepsInterval<-format(averageDay$Time[which.max(averageDay$steps)],'%H:%M')
+
+#plot time series
+with(averageDay, plot(steps~Time, type='l', lwd=2, main='Time Series on average day',xlab='interval of 5 minutes',ylab='average number of steps within all days'))
 
 ## Imputing missing values
+#replace NA by estimate
+totalNAs=sum(!complete.cases(df))
+NApercent<-paste0(round(100*(totalNAs/nrow(df)),2),"%")
+df2<-df
+approxSteps <- merge(df[is.na(df2$steps)],averageDay, by = 'interval')$steps.y
+df2[is.na(df2$steps)]$steps<-as.integer(approxSteps)
+
+#rince and repeat
+melted2<-melt(df2, id=c('date','interval'))
+morphed2<-dcast(melted2, date~variable, sum)
+meanStepsDay2<-mean(morphed2$steps)
+medianStepsDay2<-median(morphed2$steps)
+hist(morphed2$steps, col="green", main="The total Number of daily steps", xlab="total number of steps/day")
+abline(v=meanSteps2, col="red", lwd=3)
+abline(v=medianSteps2, col="blue", lwd=2)
+legend("topright", legend=c("mean","median"), col=c("red", "blue"),
+        lty="solid", lwd=3, bty="n")
+
+
+
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+library(chron)
+isWeeken <-is.weekend(datetime)
+dayType<-factor(isWeekend, labels=c("weekday", "weekwend"))
+df2$dayType<-dayType
+avgDayFilled<-aggregate(df2$steps, list(df2$dayType, df2$interval), mean)
+names(avgDayFilled)<-c('daytype', 'interval','steps')
+strg(avgDayFilled)
+library(lattice)
+xyplot(steps~interval|dayType, data=avgDayFilled, layout=c(1,2), type=c('l','r'), lwd=2)
+
+
